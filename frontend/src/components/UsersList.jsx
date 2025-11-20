@@ -153,7 +153,7 @@ function UserModal({ user, onClose }) {
   const generatePublicLink = async (userId) => {
     setLoadingLink(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_URL = import.meta.env.VITE_API_URL || '';
       const res = await fetch(`${API_URL}/api/public/generate-token/${userId}`);
       if (res.ok) {
         const data = await res.json();

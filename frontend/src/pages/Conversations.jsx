@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ConversationsMonitor from '../components/ConversationsMonitor';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export default function Conversations() {
   const [conversations, setConversations] = useState([]);

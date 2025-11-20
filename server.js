@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Routes
 import analyticsRoutes from './routes/analytics.js';
@@ -16,6 +18,9 @@ import wrappedRoutes from './routes/wrapped.js';
 import { startRealtimeUpdates } from './services/realtime.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = createServer(app);
@@ -33,13 +38,26 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes
+// API Routes
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/conversations', conversationsRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/wrapped', wrappedRoutes);
+
+// Serve static files from frontend build
+const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
+app.use(express.static(frontendDistPath));
+
+// Serve index.html for all non-API routes (SPA support)
+app.get('*', (req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API endpoint not found' });
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
 
 // WebSocket connection
 wss.on('connection', (ws) => {
@@ -56,6 +74,8 @@ startRealtimeUpdates(wss);
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log(`🚀 NutrIA Dashboard API running on port ${PORT}`);
+  console.log(`🚀 NutrIA Dashboard running on port ${PORT}`);
   console.log(`📊 WebSocket server ready`);
+  console.log(`🌐 Frontend: http://localhost:${PORT}`);
+  console.log(`🔌 API: http://localhost:${PORT}/api`);
 });
