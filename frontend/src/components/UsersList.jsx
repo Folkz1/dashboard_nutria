@@ -131,13 +131,13 @@ export default function UsersList({ users }) {
             {sortedUsers.map((user) => {
               const score = calculateEngagementScore(user);
               return (
-                <tr key={user.user_id} className="hover:bg-gray-50">
+                <tr key={user.id || user.user_id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div>
                       <p className="font-medium text-gray-900">
                         {user.name || 'Sem nome'}
                       </p>
-                      <p className="text-sm text-gray-500">{user.user_id}</p>
+                      <p className="text-sm text-gray-500">{user.id || user.user_id}</p>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -169,14 +169,14 @@ export default function UsersList({ users }) {
                         Ver detalhes
                       </button>
                       <button
-                        onClick={() => openPublicProfile(user.user_id)}
+                        onClick={() => openPublicProfile(user.id || user.user_id)}
                         className="text-green-600 hover:text-green-800 text-sm font-medium"
                         title="Ver perfil público"
                       >
                         👁️
                       </button>
                       <button
-                        onClick={() => openWrapped(user.user_id)}
+                        onClick={() => openWrapped(user.id || user.user_id)}
                         className="text-purple-600 hover:text-purple-800 text-sm font-medium"
                         title="Ver wrapped do mês"
                       >
@@ -288,19 +288,19 @@ function UserModal({ user, onClose }) {
             <h4 className="font-semibold text-gray-900 mb-3">⚡ Ações Rápidas</h4>
             <div className="flex flex-wrap gap-2">
               <button 
-                onClick={() => openPublicProfile(user.user_id)}
+                onClick={() => openPublicProfile(user.id || user.user_id)}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
               >
                 👁️ Ver Perfil
               </button>
               <button 
-                onClick={() => openWrapped(user.user_id)}
+                onClick={() => openWrapped(user.id || user.user_id)}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700"
               >
                 🎉 Ver Wrapped
               </button>
               <button
-                onClick={() => generatePublicLink(user.user_id)}
+                onClick={() => generatePublicLink(user.id || user.user_id)}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 disabled={loadingLink}
               >
