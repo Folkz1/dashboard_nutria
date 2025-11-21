@@ -255,7 +255,8 @@ router.get('/generate/:userId/:year/:month', async (req, res) => {
     }
 
     const token = tokenResult.rows[0].token;
-    const wrappedUrl = `${process.env.FRONTEND_URL}/wrapped/${token}/${year}/${month}`;
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') || '';
+    const wrappedUrl = `${frontendUrl}/wrapped/${token}/${year}/${month}`;
 
     res.json({
       userId,

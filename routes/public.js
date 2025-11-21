@@ -185,7 +185,8 @@ router.get('/generate-token/:userId', async (req, res) => {
     `, [userId]);
 
     const token = tokenResult.rows[0].token;
-    const publicUrl = `${process.env.FRONTEND_URL}/u/${token}`;
+    const frontendUrl = process.env.FRONTEND_URL?.replace(/\/$/, '') || '';
+    const publicUrl = `${frontendUrl}/u/${token}`;
 
     res.json({
       userId,
