@@ -1,0 +1,317 @@
+{
+  "name": "Dashboard NutrIA - Envio Automático Wrapped Mensal",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 1 * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger - Todo dia 1º às 10h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT user_id, name, phone FROM users WHERE last_interaction >= NOW() - INTERVAL '30 days' AND status = 'active' ORDER BY name",
+        "options": {}
+      },
+      "id": "postgres-get-users",
+      "name": "PostgreSQL - Buscar Usuários Ativos",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "PostgreSQL NutrIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calcular mês e ano anterior\nconst now = new Date();\nconst lastMonth = now.getMonth() === 0 ? 12 : now.getMonth();\nconst year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();\n\n// Adicionar aos dados de cada usuário\nconst users = $input.all();\n\nreturn users.map(user => ({\n  json: {\n    ...user.json,\n    year: year,\n    month: lastMonth,\n    monthName: new Date(year, lastMonth - 1).toLocaleString('pt-BR', { month: 'long' })\n  }\n}));"
+      },
+      "id": "code-calculate-date",
+      "name": "Code - Calcular Mês Anterior",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-in-batches",
+      "name": "Split In Batches - Processar um por vez",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.DASHBOARD_API }}/api/wrapped/generate/{{ $json.user_id }}/{{ $json.year }}/{{ $json.month }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-generate-wrapped",
+      "name": "HTTP Request - Gerar Link Wrapped",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar mensagem personalizada para WhatsApp\nconst user = $input.first().json;\nconst wrapped = $input.first().json;\n\nconst message = `🎉 *${user.name}, seu NutrIA Wrapped está pronto!*\n\nVeja como foi seu ${user.monthName}:\n${wrapped.wrappedUrl}\n\n📊 Suas conquistas te esperam!\n💪 Compartilhe com seus amigos!\n\n_Enviado automaticamente pelo Dashboard NutrIA_`;\n\nreturn [{\n  json: {\n    phone: user.phone,\n    message: message,\n    user_id: user.user_id,\n    user_name: user.name,\n    wrapped_url: wrapped.wrappedUrl\n  }\n}];"
+      },
+      "id": "code-prepare-message",
+      "name": "Code - Preparar Mensagem WhatsApp",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API }}/send",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "http-send-whatsapp",
+      "name": "HTTP Request - Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "id": "wait-between-sends",
+      "name": "Wait - 2 segundos entre envios",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "wrapped_sends_log",
+        "columns": "user_id, sent_at, wrapped_url, status",
+        "additionalFields": {
+          "values": "={{ $json.user_id }}, NOW(), '{{ $json.wrapped_url }}', 'success'"
+        }
+      },
+      "id": "postgres-log-success",
+      "name": "PostgreSQL - Log Envio Sucesso",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1850, 200],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "PostgreSQL NutrIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "wrapped_sends_log",
+        "columns": "user_id, sent_at, error_message, status",
+        "additionalFields": {
+          "values": "={{ $json.user_id }}, NOW(), '{{ $json.error }}', 'failed'"
+        }
+      },
+      "id": "postgres-log-error",
+      "name": "PostgreSQL - Log Erro",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [1850, 400],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "PostgreSQL NutrIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Resumo final da execução\nconst allItems = $input.all();\nconst totalUsers = allItems.length;\nconst successCount = allItems.filter(item => item.json.status === 'success').length;\nconst errorCount = totalUsers - successCount;\n\nconst summary = {\n  execution_date: new Date().toISOString(),\n  total_users: totalUsers,\n  success_count: successCount,\n  error_count: errorCount,\n  success_rate: ((successCount / totalUsers) * 100).toFixed(2) + '%'\n};\n\nconsole.log('📊 Resumo da Execução:', summary);\n\nreturn [{ json: summary }];"
+      },
+      "id": "code-final-summary",
+      "name": "Code - Resumo Final",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2050, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger - Todo dia 1º às 10h": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Buscar Usuários Ativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Buscar Usuários Ativos": {
+      "main": [
+        [
+          {
+            "node": "Code - Calcular Mês Anterior",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Calcular Mês Anterior": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches - Processar um por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches - Processar um por vez": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Gerar Link Wrapped",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Gerar Link Wrapped": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Mensagem WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Mensagem WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Wait - 2 segundos entre envios",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostgreSQL - Log Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - 2 segundos entre envios": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Log Envio Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Log Envio Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches - Processar um por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Log Erro": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches - Processar um por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Dashboard",
+      "id": "dashboard"
+    },
+    {
+      "name": "Automação",
+      "id": "automation"
+    },
+    {
+      "name": "WhatsApp",
+      "id": "whatsapp"
+    }
+  ],
+  "meta": {
+    "instanceId": "nutria-dashboard"
+  },
+  "pinData": {},
+  "versionId": "1.0.0"
+}

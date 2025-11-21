@@ -3,6 +3,64 @@ import { query } from '../services/database.js';
 
 const router = express.Router();
 
+// Get metrics (alias for overview - usado pelo frontend)
+router.get('/metrics', async (req, res) => {
+  try {
+    const usersResult = await query(`
+      SELECT 
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN subscription = 'premium' THEN 1 END) as premium_users,
+        COUNT(CASE WHEN subscription = 'trial' THEN 1 END) as trial_users,
+        COUNT(CASE WHEN last_interaction > NOW() - INTERVAL '24 hours' THEN 1 END) as active_today
+      FROM users
+    `);
+
+    const analysesResult = await query(`
+      SELECT 
+        COUNT(*) as total_analyses,
+        COUNT(CASE WHEN created_at > NOW() - INTERVAL '24 hours' THEN 1 END) as analyses_today
+      FROM food_analyses
+    `);
+
+    // Activity by hour (last 24h)
+    const activityResult = await query(`
+      SELECT 
+        EXTRACT(HOUR FROM created_at) as hour,
+        COUNT(*) as count
+      FROM n8n_chat
+      WHERE created_at > NOW() - INTERVAL '24 hours'
+      GROUP BY EXTRACT(HOUR FROM created_at)
+      ORDER BY hour
+    `);
+
+    // Conversion rate
+    const conversionResult = await query(`
+      SELECT 
+        COUNT(CASE WHEN subscription = 'trial' THEN 1 END) as trials,
+        COUNT(CASE WHEN subscription = 'premium' THEN 1 END) as premiums
+      FROM users
+    `);
+
+    const trials = parseInt(conversionResult.rows[0].trials) || 0;
+    const premiums = parseInt(conversionResult.rows[0].premiums) || 0;
+    const conversion_rate = trials > 0 ? Math.round((premiums / (trials + premiums)) * 100) : 0;
+
+    res.json({
+      total_users: parseInt(usersResult.rows[0].total_users),
+      premium_users: parseInt(usersResult.rows[0].premium_users),
+      trial_users: parseInt(usersResult.rows[0].trial_users),
+      active_today: parseInt(usersResult.rows[0].active_today),
+      total_analyses: parseInt(analysesResult.rows[0].total_analyses),
+      analyses_today: parseInt(analysesResult.rows[0].analyses_today),
+      conversion_rate,
+      activity_24h: activityResult.rows
+    });
+  } catch (error) {
+    console.error('Error fetching metrics:', error);
+    res.status(500).json({ error: 'Failed to fetch metrics' });
+  }
+});
+
 // Get overview metrics
 router.get('/overview', async (req, res) => {
   try {

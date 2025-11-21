@@ -1,0 +1,340 @@
+{
+  "name": "Dashboard NutrIA - Alertas Trial Acabando",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 10 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-daily",
+      "name": "Schedule - Todo dia às 10h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.DASHBOARD_API }}/api/alerts",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-get-alerts",
+      "name": "HTTP Request - Buscar Alertas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.type }}",
+              "operation": "equals",
+              "value2": "trial_ending"
+            }
+          ]
+        }
+      },
+      "id": "filter-trial-ending",
+      "name": "Filter - Apenas Trial Acabando",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-batches",
+      "name": "Split In Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.DASHBOARD_API }}/api/users/{{ $json.user_id }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-get-user",
+      "name": "HTTP Request - Buscar Dados do Usuário",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.DASHBOARD_API }}/api/public/generate-token/{{ $json.user_id }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-generate-link",
+      "name": "HTTP Request - Gerar Link Público",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Preparar mensagem de trial acabando\nconst user = $input.first().json;\nconst publicData = $input.first().json;\n\nconst daysLeft = Math.ceil((new Date(user.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24));\n\nconst message = `⏰ *${user.name}, seu trial acaba em ${daysLeft} dia${daysLeft > 1 ? 's' : ''}!*\n\n📊 Você já conquistou:\n• ${user.total_analyses} análises realizadas\n• ${user.consecutive_days} dias consecutivos\n• Score médio: ${user.avg_score}/10\n\n🎯 Veja todo seu progresso:\n${publicData.publicUrl}\n\n💎 *Não perca suas conquistas!*\nFaça upgrade para Premium e continue sua jornada.\n\nResponda *\"premium\"* para saber mais sobre os planos.\n\n_Enviado automaticamente pelo Dashboard NutrIA_`;\n\nreturn [{\n  json: {\n    phone: user.phone,\n    message: message,\n    user_id: user.user_id,\n    user_name: user.name,\n    days_left: daysLeft,\n    public_url: publicData.publicUrl\n  }\n}];"
+      },
+      "id": "code-prepare-message",
+      "name": "Code - Preparar Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.WHATSAPP_API }}/send",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "phone",
+              "value": "={{ $json.phone }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "http-send-whatsapp",
+      "name": "HTTP Request - Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1650, 300]
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "wait-delay",
+      "name": "Wait - 3 segundos",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO trial_alerts_log (user_id, alert_type, sent_at, days_left, status) VALUES ('{{ $json.user_id }}', 'trial_ending', NOW(), {{ $json.days_left }}, 'success')",
+        "options": {}
+      },
+      "id": "postgres-log-success",
+      "name": "PostgreSQL - Log Sucesso",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2050, 200],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "PostgreSQL NutrIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO trial_alerts_log (user_id, alert_type, sent_at, error_message, status) VALUES ('{{ $json.user_id }}', 'trial_ending', NOW(), '{{ $json.error }}', 'failed')",
+        "options": {}
+      },
+      "id": "postgres-log-error",
+      "name": "PostgreSQL - Log Erro",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [2050, 400],
+      "credentials": {
+        "postgres": {
+          "id": "1",
+          "name": "PostgreSQL NutrIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Resumo da execução\nconst allItems = $input.all();\nconst totalAlerts = allItems.length;\n\nconst summary = {\n  execution_date: new Date().toISOString(),\n  total_alerts_sent: totalAlerts,\n  alert_type: 'trial_ending'\n};\n\nconsole.log('📊 Resumo - Alertas de Trial:', summary);\n\nreturn [{ json: summary }];"
+      },
+      "id": "code-summary",
+      "name": "Code - Resumo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 300]
+    }
+  ],
+  "connections": {
+    "Schedule - Todo dia às 10h": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Buscar Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Buscar Alertas": {
+      "main": [
+        [
+          {
+            "node": "Filter - Apenas Trial Acabando",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter - Apenas Trial Acabando": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split In Batches": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Buscar Dados do Usuário",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Buscar Dados do Usuário": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Gerar Link Público",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Gerar Link Público": {
+      "main": [
+        [
+          {
+            "node": "Code - Preparar Mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Preparar Mensagem": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Enviar WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Enviar WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Wait - 3 segundos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PostgreSQL - Log Erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - 3 segundos": {
+      "main": [
+        [
+          {
+            "node": "PostgreSQL - Log Sucesso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Log Sucesso": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PostgreSQL - Log Erro": {
+      "main": [
+        [
+          {
+            "node": "Split In Batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "Dashboard",
+      "id": "dashboard"
+    },
+    {
+      "name": "Alertas",
+      "id": "alerts"
+    },
+    {
+      "name": "Trial",
+      "id": "trial"
+    }
+  ],
+  "meta": {
+    "instanceId": "nutria-dashboard"
+  },
+  "pinData": {},
+  "versionId": "1.0.0"
+}

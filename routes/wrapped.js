@@ -10,9 +10,9 @@ router.get('/:token/:year/:month', async (req, res) => {
     
     // Buscar usuário pelo token
     const userResult = await query(`
-      SELECT user_id, name, subscription, created_at
+      SELECT id as user_id, name, subscription, created_at
       FROM users
-      WHERE MD5(CONCAT(user_id, '-nutria-secret')) = $1
+      WHERE MD5(CONCAT(id, '-nutria-secret')) = $1
       LIMIT 1
     `, [token]);
 
@@ -32,7 +32,7 @@ router.get('/:token/:year/:month', async (req, res) => {
         MIN(score) as worst_score,
         MAX(score) as best_score,
         COUNT(DISTINCT DATE(created_at)) as active_days
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
@@ -43,7 +43,7 @@ router.get('/:token/:year/:month', async (req, res) => {
     // 2. Produto com melhor score
     const bestProductResult = await query(`
       SELECT product_name, score, created_at
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
@@ -54,7 +54,7 @@ router.get('/:token/:year/:month', async (req, res) => {
     // 3. Produto com pior score
     const worstProductResult = await query(`
       SELECT product_name, score, created_at
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
@@ -73,7 +73,7 @@ router.get('/:token/:year/:month', async (req, res) => {
           ELSE 'Outros'
         END as category,
         COUNT(*) as count
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
@@ -85,15 +85,15 @@ router.get('/:token/:year/:month', async (req, res) => {
     // 5. Alertas mais comuns
     const alertsResult = await query(`
       SELECT 
-        main_alerts,
+        UNNEST(alerts) as alert,
         COUNT(*) as count
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
-        AND main_alerts IS NOT NULL
-        AND main_alerts != ''
-      GROUP BY main_alerts
+        AND alerts IS NOT NULL
+        AND array_length(alerts, 1) > 0
+      GROUP BY alert
       ORDER BY count DESC
       LIMIT 3
     `, [user.user_id, startDate, endDate]);
@@ -103,7 +103,7 @@ router.get('/:token/:year/:month', async (req, res) => {
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as count
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
@@ -121,7 +121,7 @@ router.get('/:token/:year/:month', async (req, res) => {
 
     const prevStatsResult = await query(`
       SELECT COUNT(*) as total_analyses
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= $2
         AND created_at <= $3
@@ -183,7 +183,7 @@ router.get('/:token/:year/:month', async (req, res) => {
         SELECT 
           user_id,
           COUNT(*) as total
-        FROM daily_analyses
+        FROM food_analyses
         WHERE created_at >= $1 AND created_at <= $2
         GROUP BY user_id
       )
@@ -245,9 +245,9 @@ router.get('/generate/:userId/:year/:month', async (req, res) => {
     
     // Gerar token
     const tokenResult = await query(`
-      SELECT MD5(CONCAT(user_id, '-nutria-secret')) as token
+      SELECT MD5(CONCAT(id, '-nutria-secret')) as token
       FROM users
-      WHERE user_id = $1
+      WHERE id = $1
     `, [userId]);
 
     if (tokenResult.rows.length === 0) {

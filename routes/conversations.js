@@ -11,12 +11,18 @@ router.get('/recent', async (req, res) => {
     const conversations = await query(`
       SELECT 
         c.id,
-        c.session_id,
-        c.message,
-        c.created_at,
-        u.name as user_name
+        c.session_id as user_id,
+        c.message->>'type' as role,
+        c.message->>'content' as content,
+        c.created_at as timestamp,
+        u.name as user_name,
+        CASE 
+          WHEN u.last_interaction > NOW() - INTERVAL '5 minutes' THEN true
+          ELSE false
+        END as is_active
       FROM n8n_chat c
       LEFT JOIN users u ON c.session_id = u.id
+      WHERE c.created_at IS NOT NULL
       ORDER BY c.created_at DESC
       LIMIT $1
     `, [limit]);

@@ -19,16 +19,16 @@ router.get('/user/:token', async (req, res) => {
     // Ou usar hash do user_id como token
     const userResult = await query(`
       SELECT 
-        user_id,
+        id as user_id,
         name,
         subscription,
         created_at,
         last_interaction,
         consecutive_days,
-        trial_start_date,
-        trial_end_date
+        trial_start,
+        trial_end
       FROM users
-      WHERE MD5(CONCAT(user_id, '-nutria-secret')) = $1
+      WHERE MD5(CONCAT(id, '-nutria-secret')) = $1
       LIMIT 1
     `, [token]);
 
@@ -43,7 +43,7 @@ router.get('/user/:token', async (req, res) => {
       // Total de análises
       query(`
         SELECT COUNT(*) as total
-        FROM daily_analyses
+        FROM food_analyses
         WHERE user_id = $1
       `, [user.user_id]),
       
@@ -51,17 +51,17 @@ router.get('/user/:token', async (req, res) => {
       query(`
         SELECT COUNT(DISTINCT session_id) as total
         FROM n8n_chat
-        WHERE user_id = $1
+        WHERE session_id = $1
       `, [user.user_id]),
       
       // Conquistas/Milestones
       query(`
         SELECT 
           consecutive_days,
-          (SELECT COUNT(*) FROM daily_analyses WHERE user_id = $1) as total_analyses,
-          (SELECT AVG(score) FROM daily_analyses WHERE user_id = $1) as avg_score
+          (SELECT COUNT(*) FROM food_analyses WHERE user_id = $1) as total_analyses,
+          (SELECT AVG(score) FROM food_analyses WHERE user_id = $1) as avg_score
         FROM users
-        WHERE user_id = $1
+        WHERE id = $1
       `, [user.user_id])
     ]);
 
@@ -71,8 +71,8 @@ router.get('/user/:token', async (req, res) => {
         product_name,
         score,
         created_at,
-        main_alerts
-      FROM daily_analyses
+        ARRAY_TO_STRING(alerts, ', ') as main_alerts
+      FROM food_analyses
       WHERE user_id = $1
       ORDER BY created_at DESC
       LIMIT 10
@@ -83,7 +83,7 @@ router.get('/user/:token', async (req, res) => {
       SELECT 
         DATE(created_at) as date,
         COUNT(*) as count
-      FROM daily_analyses
+      FROM food_analyses
       WHERE user_id = $1
         AND created_at >= NOW() - INTERVAL '30 days'
       GROUP BY DATE(created_at)
@@ -136,8 +136,8 @@ router.get('/user/:token', async (req, res) => {
 
     // Calcular dias restantes do trial
     let trialDaysLeft = null;
-    if (user.subscription === 'trial' && user.trial_end_date) {
-      const daysLeft = Math.ceil((new Date(user.trial_end_date) - new Date()) / (1000 * 60 * 60 * 24));
+    if (user.subscription === 'trial' && user.trial_end) {
+      const daysLeft = Math.ceil((new Date(user.trial_end) - new Date()) / (1000 * 60 * 60 * 24));
       trialDaysLeft = Math.max(0, daysLeft);
     }
 
@@ -171,17 +171,17 @@ router.get('/generate-token/:userId', async (req, res) => {
     const { userId } = req.params;
     
     // Verificar se usuário existe
-    const userResult = await query('SELECT user_id FROM users WHERE user_id = $1', [userId]);
+    const userResult = await query('SELECT id FROM users WHERE id = $1', [userId]);
     
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    // Gerar token (MD5 do user_id + secret)
+    // Gerar token (MD5 do id + secret)
     const tokenResult = await query(`
-      SELECT MD5(CONCAT(user_id, '-nutria-secret')) as token
+      SELECT MD5(CONCAT(id, '-nutria-secret')) as token
       FROM users
-      WHERE user_id = $1
+      WHERE id = $1
     `, [userId]);
 
     const token = tokenResult.rows[0].token;
