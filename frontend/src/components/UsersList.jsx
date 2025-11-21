@@ -4,6 +4,42 @@ export default function UsersList({ users }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [sortBy, setSortBy] = useState('engagement');
 
+  const openPublicProfile = async (userId) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const res = await fetch(`${API_URL}/api/public/generate-token/${userId}`);
+      if (res.ok) {
+        const data = await res.json();
+        window.open(data.publicUrl, '_blank');
+      } else {
+        alert('Erro ao gerar link do perfil');
+      }
+    } catch (error) {
+      console.error('Error opening profile:', error);
+      alert('Erro ao abrir perfil');
+    }
+  };
+
+  const openWrapped = async (userId) => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || '';
+      const now = new Date();
+      const lastMonth = now.getMonth() === 0 ? 12 : now.getMonth();
+      const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+      
+      const res = await fetch(`${API_URL}/api/wrapped/generate/${userId}/${year}/${lastMonth}`);
+      if (res.ok) {
+        const data = await res.json();
+        window.open(data.wrappedUrl, '_blank');
+      } else {
+        alert('Erro ao gerar wrapped');
+      }
+    } catch (error) {
+      console.error('Error opening wrapped:', error);
+      alert('Erro ao abrir wrapped');
+    }
+  };
+
   const calculateEngagementScore = (user) => {
     let score = 0;
     
@@ -125,12 +161,28 @@ export default function UsersList({ users }) {
                     {user.total_analyses || 0}
                   </td>
                   <td className="px-6 py-4">
-                    <button
-                      onClick={() => setSelectedUser(user)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      Ver detalhes
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setSelectedUser(user)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Ver detalhes
+                      </button>
+                      <button
+                        onClick={() => openPublicProfile(user.user_id)}
+                        className="text-green-600 hover:text-green-800 text-sm font-medium"
+                        title="Ver perfil público"
+                      >
+                        👁️
+                      </button>
+                      <button
+                        onClick={() => openWrapped(user.user_id)}
+                        className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                        title="Ver wrapped do mês"
+                      >
+                        🎉
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );
@@ -235,21 +287,27 @@ function UserModal({ user, onClose }) {
           <div>
             <h4 className="font-semibold text-gray-900 mb-3">⚡ Ações Rápidas</h4>
             <div className="flex flex-wrap gap-2">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                Enviar Follow-up
+              <button 
+                onClick={() => openPublicProfile(user.user_id)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                👁️ Ver Perfil
               </button>
-              <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                Oferecer Premium
-              </button>
-              <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                Ver Histórico
+              <button 
+                onClick={() => openWrapped(user.user_id)}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700"
+              >
+                🎉 Ver Wrapped
               </button>
               <button
                 onClick={() => generatePublicLink(user.user_id)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                 disabled={loadingLink}
               >
-                {loadingLink ? '⏳ Gerando...' : '🔗 Link Público'}
+                {loadingLink ? '⏳ Gerando...' : '🔗 Copiar Link'}
+              </button>
+              <button className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                💬 Enviar Mensagem
               </button>
             </div>
             
