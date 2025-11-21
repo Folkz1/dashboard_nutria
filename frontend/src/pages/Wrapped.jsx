@@ -54,11 +54,26 @@ export default function Wrapped() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900 flex items-center justify-center">
-        <div className="text-center text-white max-w-md mx-auto p-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900 flex items-center justify-center p-8">
+        <div className="text-center text-white max-w-md mx-auto">
+          <img 
+            src="https://i.imgur.com/Diz9NMI.jpeg" 
+            alt="NutrIA Logo" 
+            className="h-24 w-24 rounded-full mx-auto mb-6"
+          />
           <div className="text-6xl mb-4">😕</div>
           <h1 className="text-2xl font-bold mb-2">Ops!</h1>
-          <p>{error}</p>
+          <p className="mb-6">{error}</p>
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-sm">
+            <p className="mb-2">💡 <strong>Dica:</strong></p>
+            <p>O Wrapped mostra suas estatísticas do mês anterior. Continue usando o NutrIA e volte no início do próximo mês para ver seu Wrapped!</p>
+          </div>
+          <button
+            onClick={() => window.history.back()}
+            className="mt-6 px-6 py-3 bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white rounded-lg font-semibold transition-all"
+          >
+            ← Voltar
+          </button>
         </div>
       </div>
     );
