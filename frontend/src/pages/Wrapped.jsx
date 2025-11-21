@@ -68,7 +68,11 @@ export default function Wrapped() {
     // Slide 1: Intro
     <div key="intro" className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900 flex items-center justify-center p-8">
       <div className="text-center text-white max-w-2xl">
-        <div className="text-8xl mb-8 animate-bounce">🥗</div>
+        <img 
+          src="https://i.imgur.com/Diz9NMI.jpeg" 
+          alt="NutrIA Logo" 
+          className="h-32 w-32 rounded-full mx-auto mb-8 animate-bounce"
+        />
         <h1 className="text-6xl font-bold mb-4">NutrIA Wrapped</h1>
         <h2 className="text-4xl font-semibold mb-8">
           {data.period.month} {data.period.year}
@@ -228,7 +232,12 @@ export default function Wrapped() {
     // Slide 9: Final
     <div key="final" className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-green-900 flex items-center justify-center p-8">
       <div className="text-center text-white max-w-2xl">
-        <div className="text-8xl mb-8">🎉</div>
+        <div className="text-8xl mb-4">🎉</div>
+        <img 
+          src="https://i.imgur.com/Diz9NMI.jpeg" 
+          alt="NutrIA Logo" 
+          className="h-24 w-24 rounded-full mx-auto mb-4"
+        />
         <h2 className="text-5xl font-bold mb-6">
           Esse foi seu {data.period.month}!
         </h2>
@@ -259,9 +268,14 @@ export default function Wrapped() {
           </button>
         </div>
         
-        <p className="text-sm opacity-75 mt-8">
-          🥗 NutrIA - Seu assistente nutricional
-        </p>
+        <div className="flex items-center justify-center space-x-2 mt-8 opacity-75">
+          <img 
+            src="https://i.imgur.com/Diz9NMI.jpeg" 
+            alt="NutrIA Logo" 
+            className="h-6 w-6 rounded-full"
+          />
+          <p className="text-sm">NutrIA - Seu assistente nutricional</p>
+        </div>
       </div>
     </div>
   ].filter(Boolean);

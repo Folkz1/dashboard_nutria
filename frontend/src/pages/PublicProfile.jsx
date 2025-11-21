@@ -59,7 +59,11 @@ export default function PublicProfile() {
       <header className="bg-white shadow-sm">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center space-x-3">
-            <div className="text-4xl">🥗</div>
+            <img 
+              src="https://i.imgur.com/Diz9NMI.jpeg" 
+              alt="NutrIA Logo" 
+              className="h-16 w-16 rounded-full"
+            />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">NutrIA</h1>
               <p className="text-sm text-gray-600">Seu Progresso Pessoal</p>
@@ -241,7 +245,14 @@ export default function PublicProfile() {
 
         {/* Footer */}
         <div className="text-center text-gray-500 text-sm py-8">
-          <p>🥗 NutrIA - Seu assistente nutricional inteligente</p>
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <img 
+              src="https://i.imgur.com/Diz9NMI.jpeg" 
+              alt="NutrIA Logo" 
+              className="h-6 w-6 rounded-full"
+            />
+            <p>NutrIA - Seu assistente nutricional inteligente</p>
+          </div>
           <p className="mt-2">Continue conversando pelo WhatsApp!</p>
         </div>
       </main>

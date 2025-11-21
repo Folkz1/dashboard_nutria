@@ -25,7 +25,12 @@ function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <h1 className="text-2xl font-bold text-primary-600">🥗 NutrIA</h1>
+              <img 
+                src="https://i.imgur.com/Diz9NMI.jpeg" 
+                alt="NutrIA Logo" 
+                className="h-10 w-10 rounded-full mr-3"
+              />
+              <h1 className="text-2xl font-bold text-green-600">NutrIA</h1>
             </div>
             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
               {navItems.map(({ path, icon: Icon, label }) => (

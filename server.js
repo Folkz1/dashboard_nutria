@@ -48,15 +48,27 @@ app.use('/api/wrapped', wrappedRoutes);
 
 // Serve static files from frontend build
 const frontendDistPath = path.join(__dirname, 'frontend', 'dist');
-app.use(express.static(frontendDistPath));
+app.use(express.static(frontendDistPath, {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true
+}));
 
 // Serve index.html for all non-API routes (SPA support)
 app.get('*', (req, res) => {
-  // Skip API routes
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
+  // Skip API routes and health check
+  if (req.path.startsWith('/api/') || req.path === '/health') {
+    return res.status(404).json({ error: 'Endpoint not found' });
   }
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+  
+  // Send index.html for all other routes (SPA)
+  const indexPath = path.join(frontendDistPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('Error sending index.html:', err);
+      res.status(500).send('Error loading application');
+    }
+  });
 });
 
 // WebSocket connection
