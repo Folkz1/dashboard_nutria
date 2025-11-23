@@ -6,6 +6,7 @@ import Conversations from './pages/Conversations'
 import Alerts from './pages/Alerts'
 import PublicProfile from './pages/PublicProfile'
 import Wrapped from './pages/Wrapped'
+import SourcesManager from './pages/SourcesManager'
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/users" element={<UsersPage />} />
               <Route path="/conversations" element={<Conversations />} />
               <Route path="/alerts" element={<Alerts />} />
+              <Route path="/sources" element={<SourcesManager />} />
             </Routes>
           </Layout>
         } />

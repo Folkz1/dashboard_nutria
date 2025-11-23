@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Users, MessageSquare, Bell, Menu, X, LogOut, Settings } from 'lucide-react'
+import { LayoutDashboard, Users, MessageSquare, Bell, Menu, X, LogOut, Settings, Database } from 'lucide-react'
 
 export default function Layout({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false)
@@ -11,6 +11,7 @@ export default function Layout({ children }) {
         { path: '/users', icon: Users, label: 'Usuários' },
         { path: '/conversations', icon: MessageSquare, label: 'Conversas' },
         { path: '/alerts', icon: Bell, label: 'Alertas' },
+        { path: '/sources', icon: Database, label: 'Fontes' },
     ]
 
     const isActive = (path) => location.pathname === path
