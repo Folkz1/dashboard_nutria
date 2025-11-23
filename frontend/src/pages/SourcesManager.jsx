@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, Trash2, Power, Check, X, Loader, Search, Link as LinkIcon, Rss, Globe, ExternalLink, AlertCircle, CheckCircle2 } from 'lucide-react'
 
-const SCRAPER_API = 'https://scrapers-reddit-youtube-blogs.7exngm.easypanel.host'
+const SCRAPER_API = import.meta.env.VITE_SCRAPER_API_URL || 'https://scrapers-reddit-youtube-blogs.7exngm.easypanel.host'
 
 export default function SourcesManager() {
     const [sources, setSources] = useState([])
@@ -234,8 +234,8 @@ export default function SourcesManager() {
                 {/* Validation Result */}
                 {validationResult && (
                     <div className={`mt-4 p-4 rounded-xl border ${validationResult.success && validationResult.data?.validation_score > 0
-                            ? 'bg-emerald-50 border-emerald-200'
-                            : 'bg-rose-50 border-rose-200'
+                        ? 'bg-emerald-50 border-emerald-200'
+                        : 'bg-rose-50 border-rose-200'
                         }`}>
                         <div className="flex items-start">
                             {validationResult.success && validationResult.data?.validation_score > 0 ? (
@@ -245,8 +245,8 @@ export default function SourcesManager() {
                             )}
                             <div className="flex-1">
                                 <h3 className={`font-semibold text-sm ${validationResult.success && validationResult.data?.validation_score > 0
-                                        ? 'text-emerald-900'
-                                        : 'text-rose-900'
+                                    ? 'text-emerald-900'
+                                    : 'text-rose-900'
                                     }`}>
                                     {validationResult.success && validationResult.data?.validation_score > 0
                                         ? 'Fonte Validada com Sucesso!'
@@ -356,8 +356,8 @@ export default function SourcesManager() {
                                     <button
                                         onClick={() => toggleSource(source.id)}
                                         className={`p-2 rounded-lg transition-colors ${source.active
-                                                ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                                                : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+                                            ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                            : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
                                             }`}
                                         title={source.active ? 'Desativar' : 'Ativar'}
                                     >
