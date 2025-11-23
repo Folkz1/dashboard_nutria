@@ -206,37 +206,53 @@ export default function ConversationsMonitor({ conversations }) {
                 .map((msg, index) => (
                   <div
                     key={index}
-                    className={`flex items-start space-x-3 ${msg.role === 'assistant' ? 'flex-row-reverse space-x-reverse' : ''
+                    className={`flex items-end space-x-2 ${msg.role === 'assistant' ? 'justify-end' : 'justify-start'
                       }`}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user'
-                        ? 'bg-slate-200 text-slate-600'
-                        : 'bg-primary-500 text-white'
-                      }`}>
-                      {msg.role === 'user' ? (
-                        <User className="w-4 h-4" />
-                      ) : (
-                        <Bot className="w-4 h-4" />
-                      )}
-                    </div>
+                    {/* Avatar do Usuário (esquerda) */}
+                    {msg.role === 'user' && (
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 border-2 border-blue-200">
+                        <User className="w-4 h-4 text-blue-600" />
+                      </div>
+                    )}
+
+                    {/* Balão de Mensagem */}
                     <div className={`flex flex-col max-w-[70%] ${msg.role === 'assistant' ? 'items-end' : 'items-start'
                       }`}>
-                      <div className={`px-4 py-2.5 rounded-2xl ${msg.role === 'user'
-                          ? 'bg-white border border-slate-200 text-slate-900'
-                          : 'bg-primary-500 text-white'
+                      {/* Label de quem está falando */}
+                      <span className={`text-xs font-medium mb-1 px-2 ${msg.role === 'user' ? 'text-blue-600' : 'text-emerald-600'
                         }`}>
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        {msg.role === 'user' ? 'Usuário' : 'NutrIA'}
+                      </span>
+
+                      {/* Bolha da mensagem */}
+                      <div className={`px-4 py-3 rounded-2xl shadow-sm ${msg.role === 'user'
+                          ? 'bg-white border border-slate-200 text-slate-900 rounded-bl-sm'
+                          : 'bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-br-sm shadow-lg'
+                        }`}>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       </div>
+
+                      {/* Timestamp */}
                       <div className="flex items-center space-x-1 mt-1 px-2">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span className="text-xs text-slate-500">
+                        <Clock className={`w-3 h-3 ${msg.role === 'user' ? 'text-slate-400' : 'text-emerald-600'
+                          }`} />
+                        <span className={`text-xs ${msg.role === 'user' ? 'text-slate-500' : 'text-emerald-600 font-medium'
+                          }`}>
                           {formatTime(msg.timestamp)}
                         </span>
                         {msg.role === 'assistant' && (
-                          <CheckCheck className="w-3 h-3 text-primary-500" />
+                          <CheckCheck className="w-3.5 h-3.5 text-emerald-600" />
                         )}
                       </div>
                     </div>
+
+                    {/* Avatar do Bot (direita) */}
+                    {msg.role === 'assistant' && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-md border-2 border-primary-300">
+                        <Bot className="w-4 h-4 text-white" />
+                      </div>
+                    )}
                   </div>
                 ))}
               <div ref={messagesEndRef} />
